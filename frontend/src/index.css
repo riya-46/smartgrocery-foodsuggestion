@@ -1,0 +1,19 @@
+/*  GLOBAL RESET  */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/*  BODY  */
+body {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f1f5f9, #e0e7ff);
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont;
+  color: #0f172a;
+}
+
+/*  ROOT  */
+#root {
+  max-width: 100%;
+}

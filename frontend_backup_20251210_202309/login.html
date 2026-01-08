@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Smart Grocery — Login</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { margin:0; font-family: 'Inter', Arial, sans-serif; background:#f8faff; color:#111827; display:flex; align-items:center; justify-content:center; min-height:100vh;}
+    .center { width:420px; background:white; padding:28px; border-radius:12px; box-shadow:0 8px 30px rgba(15,23,42,0.04); }
+    h1{margin:0 0 8px 0;font-size:22px}
+    p{margin:0 0 16px 0;color:#6b7280}
+    input{width:100%;padding:12px;margin-top:10px;border:1px solid #e6eef8;border-radius:8px;font-size:14px}
+    button{width:100%;padding:12px;margin-top:14px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer}
+    .small{font-size:13px;color:#6b7280;text-align:center;margin-top:12px}
+    .hint{font-size:13px;color:#94a3b8;margin-top:8px;text-align:center}
+  </style>
+</head>
+<body>
+
+  <div class="center">
+    <h1>Smart Grocery</h1>
+    <p>Sign in or create an account (demo — local only).</p>
+
+    <input id="email" type="email" placeholder="Email (e.g. you@gmail.com)" />
+    <input id="password" type="password" placeholder="Password" />
+
+    <button id="loginBtn">Login / Signup</button>
+
+    <div class="small">This demo stores data locally in your browser (localStorage).</div>
+    <div class="hint">If you are already signed in, opening this page will redirect you to Dashboard.</div>
+  </div>
+
+<script>
+  // simple client-side auth (learning/demo)
+  const loginBtn = document.getElementById('loginBtn');
+
+  function setSession(email) {
+    const now = Date.now();
+    const session = { email, lastActivity: now, createdAt: now };
+    localStorage.setItem('sg_session', JSON.stringify(session));
+  }
+
+  function saveUser(email, pass) {
+    const users = JSON.parse(localStorage.getItem('sg_users') || '{}');
+    users[email] = { email, password: pass, name: email.split('@')[0] || email };
+    localStorage.setItem('sg_users', JSON.stringify(users));
+  }
+
+  loginBtn.addEventListener('click', () => {
+    const email = document.getElementById('email').value.trim();
+    const pass = document.getElementById('password').value.trim();
+    if (!email || !pass) { alert('Enter email and password'); return; }
+    const users = JSON.parse(localStorage.getItem('sg_users') || '{}');
+    if (!users[email]) {
+      saveUser(email, pass);
+    } else if (users[email].password !== pass) {
+      if (!confirm('Password mismatch. Overwrite & sign in?')) return;
+      saveUser(email, pass);
+    }
+    setSession(email);
+    window.location.href = 'dashboard.html';
+  });
+
+  // Auto redirect if session valid
+  (function autoRedirect() {
+    try {
+      const sess = JSON.parse(localStorage.getItem('sg_session') || 'null');
+      if (sess && (Date.now() - sess.lastActivity) < 24 * 60 * 60 * 1000) {
+        window.location.href = 'dashboard.html';
+      } else {
+        // clear expired
+        if (sess) localStorage.removeItem('sg_session');
+      }
+    } catch(e) {}
+  })();
+</script>
+</body>
+</html>

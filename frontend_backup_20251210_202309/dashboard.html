@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Smart Grocery — Dashboard</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --accent:#2563eb; --bg:#f8faff; --card:#ffffff; --muted:#6b7280; --text:#0f1724; --radius:10px; }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Inter',system-ui,Arial;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
+  .app{display:flex;min-height:100vh}
+
+  /* Sidebar */
+  .sidebar{width:260px;background:linear-gradient(180deg,#fff,#fbfdff);padding:22px;border-right:1px solid #eef2ff;box-shadow:0 4px 20px rgba(16,24,40,0.03)}
+  .logo{font-weight:700;color:var(--text);margin-bottom:18px;font-size:18px;display:flex;gap:10px;align-items:center}
+  .menu{margin-top:18px;display:flex;flex-direction:column;gap:6px}
+  .menu .item{padding:10px 12px;border-radius:10px;display:flex;align-items:center;gap:12px;cursor:pointer;color:var(--muted);transition:all .12s ease}
+  .menu .item:hover{background:#f1f7ff;color:var(--accent);transform:translateX(4px)}
+  .menu .item.active{background:rgba(37,99,235,0.08);color:var(--accent);font-weight:600;box-shadow:inset 3px 0 0 var(--accent)}
+
+  .muted{color:var(--muted)}
+  .small{font-size:13px;color:var(--muted)}
+
+  /* Main */
+  .main{flex:1;padding:20px 28px}
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;gap:12px}
+  .title{font-size:20px;font-weight:700}
+  .profile{display:flex;gap:12px;align-items:center;color:var(--muted);font-size:14px}
+
+  .layout{display:grid;grid-template-columns:1fr 520px;gap:20px;align-items:start}
+  @media (max-width:1100px){.layout{grid-template-columns:1fr}.sidebar{display:none}}
+
+  .card{background:var(--card);padding:16px;border-radius:var(--radius);box-shadow:0 8px 30px rgba(15,23,42,0.04)}
+
+  .form-row{display:flex;gap:10px;margin-top:10px;align-items:center}
+  .input{padding:10px 12px;border:1px solid #eef2f8;border-radius:8px;width:100%;font-size:14px;background:#fff}
+  .select{padding:10px 12px;border-radius:8px;border:1px solid #eef2f8;background:#fff}
+  .btn{background:var(--accent);color:white;padding:10px 14px;border:none;border-radius:8px;cursor:pointer;font-weight:600;box-shadow:0 6px 18px rgba(37,99,235,0.08)}
+
+  .item-row{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px dashed #f3f6fb;align-items:center}
+  .tag{background:#f1f5ff;color:var(--accent);padding:6px 8px;border-radius:999px;font-size:12px;font-weight:600}
+
+  .calendar{margin-top:12px}
+  .cal-header{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-top:10px}
+  .cal-week{display:flex;justify-content:space-between;gap:8px;margin-top:8px;color:var(--muted);font-size:13px}
+  .cal-day{background:#fff;padding:10px;border-radius:8px;text-align:center;cursor:pointer;border:1px solid transparent;transition:all .12s ease;min-height:64px;display:flex;flex-direction:column;justify-content:space-between}
+  .cal-day:hover{transform:translateY(-3px);box-shadow:0 8px 20px rgba(16,24,40,0.04)}
+  .cal-day .date-num{font-weight:600}
+  .cal-day .badge{margin-top:8px;font-size:12px;color:var(--accent);font-weight:700}
+  .cal-day.empty{background:transparent;border:none;box-shadow:none;cursor:default;opacity:0}
+  .cal-day.active{background:rgba(37,99,235,0.08);color:var(--accent);font-weight:700;border:1px solid rgba(37,99,235,0.12)}
+
+  .month-list{margin-top:12px;max-height:260px;overflow:auto;padding-right:6px}
+  .month-row{display:flex;justify-content:space-between;gap:10px;padding:8px 6px;border-radius:8px;align-items:center}
+  .month-row:hover{background:#fbfdff}
+
+  .summary{display:flex;gap:12px;margin-top:12px}
+  .s-card{flex:1;padding:12px;border-radius:8px;background:#fff;text-align:center}
+  .muted-sm{color:var(--muted);font-size:13px}
+
+  /* charts responsive */
+  .charts { display:flex; gap:14px; margin-top:12px; flex-wrap:wrap; }
+  .chart-card { background:#fff; padding:12px; border-radius:8px; box-shadow:0 6px 18px rgba(16,24,40,0.03); }
+  .chart-card canvas { display:block; width:100% !important; height:220px !important; }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <aside class="sidebar">
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="24" rx="6" fill="#2563eb"/><path d="M8 12h8M8 8h8M8 16h5" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div>Smart Grocery</div>
+    </div>
+
+    <nav class="menu" aria-label="Main menu">
+      <div class="item active" id="menu-family"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 11.5L12 4l9 7.5" stroke="#94a3b8" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg><div>Family Mode</div></div>
+      <div class="item" id="menu-graphs"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 3v18h18" stroke="#94a3b8" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 13v5M12 9v9M17 5v13" stroke="#94a3b8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><div>Monthly Graphs</div></div>
+      <div class="item" id="menu-ai"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 2v20M2 12h20" stroke="#94a3b8" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg><div>Integrated AI</div></div>
+      <div class="item" id="menu-settings"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 15.5a3.5 3.5 0 100-7 3.5 3.5 0 000 7z" stroke="#94a3b8" stroke-width="1.3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06A1.65 1.65 0 0015 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 008.6 15 1.65 1.65 0 007 13.18l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 0010.6 9 1.65 1.65 0 0012 7.6" stroke="#94a3b8" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg><div>Settings</div></div>
+      <div style="margin-top:16px"></div>
+      <div class="item" id="menu-logout"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M16 17l5-5-5-5M21 12H9" stroke="#f43f5e" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg><div style="color:#f43f5e">Logout</div></div>
+    </nav>
+
+    <div style="margin-top:26px;font-size:13px" class="muted">Default mode: <strong>Family</strong><br>Auto-logout: <strong>24 hours</strong></div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div><div class="title">Family Dashboard</div><div class="muted-sm">Manage daily grocery, stock and monthly spending</div></div>
+      <div class="profile"><div id="welcomeName" class="muted-sm">—</div><div style="width:40px;height:40px;border-radius:10px;background:#eef2ff;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--accent)">R</div></div>
+    </div>
+
+    <div class="layout">
+      <section>
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center"><div style="font-weight:700">Daily Grocery Add</div><div class="muted-sm" id="selectedDateLabel">Today</div></div>
+
+          <div style="margin-top:12px">
+            <input id="itemName" class="input" placeholder="Item name (e.g. Tomato)">
+            <div class="form-row">
+              <input id="itemQty" type="number" class="input" placeholder="Quantity (e.g. 2)">
+              <select id="itemUnit" class="select" style="width:110px"><option>pcs</option><option>kg</option><option>g</option><option>ltr</option></select>
+              <input id="itemPrice" type="number" class="input" placeholder="Price (total)">
+            </div>
+
+            <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
+              <select id="itemCategory" class="select" style="width:180px"><option value="Fruit">Fruit</option><option value="Vegetable">Vegetable</option><option value="Grain">Grain</option><option value="Snack">Snack</option><option value="Other">Other</option></select>
+              <button id="addBtn" class="btn" style="margin-left:auto">Add Item</button>
+            </div>
+          </div>
+
+          <div style="margin-top:18px">
+            <div style="font-weight:600;margin-bottom:8px">Items for <span id="todayLabel">Today</span></div>
+            <div id="todayList" class="month-list"></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:16px">
+          <div class="ml-head"><div style="font-weight:700">Monthly List</div><div class="muted-sm" id="monthViewLabel">Showing: </div></div>
+
+          <div id="monthlyListArea" style="min-height:120px"><div class="muted-sm">Select a month/day from the calendar to see month's details.</div></div>
+
+          <!-- Charts placed here -->
+          <div class="charts">
+            <div class="chart-card" style="flex:1; min-width:260px">
+              <div style="font-weight:700; margin-bottom:8px;">Category Breakdown</div>
+              <canvas id="catPie"></canvas>
+            </div>
+
+            <div class="chart-card" style="flex:1.6; min-width:320px">
+              <div style="font-weight:700; margin-bottom:8px;">Monthly Expense Trend (last 6 months)</div>
+              <canvas id="trendLine"></canvas>
+            </div>
+          </div>
+
+          <div style="margin-top:12px" id="monthlyControls" class="muted-sm"></div>
+        </div>
+      </section>
+
+      <aside>
+        <div class="card calendar">
+          <div class="cal-header"><div style="font-weight:700">Calendar</div><div style="display:flex;gap:8px;align-items:center"><button id="prevMonth" class="btn" style="background:#f1f5ff;color:var(--accent);border:1px solid #e6f0ff">◀</button><div id="monthYearLabel" style="font-weight:600"></div><button id="nextMonth" class="btn" style="background:#f1f5ff;color:var(--accent);border:1px solid #e6f0ff">▶</button></div></div>
+
+          <div class="cal-week" style="margin-top:12px"><div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div></div>
+          <div class="cal-grid" id="calGrid"></div>
+
+          <div class="summary"><div class="s-card"><div class="muted-sm">This Month Total</div><div id="monthTotal" style="font-weight:800;margin-top:8px">₹0</div></div><div class="s-card"><div class="muted-sm">Mode (Family%)</div><div id="modePercent" style="font-weight:800;margin-top:8px">100%</div></div></div>
+
+          <div style="margin-top:12px"><div style="font-weight:700;margin-bottom:6px">Category Breakdown</div><div id="categoryBreakdown" class="muted-sm">No purchases yet</div></div>
+        </div>
+
+        <div class="card" style="margin-top:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center"><div style="font-weight:700">Integrated AI (Demo)</div><div class="muted-sm">No external API</div></div>
+          <div style="margin-top:10px"><button id="aiSuggest" class="btn" style="background:#111827">Get Recipe Suggestion</button><div id="aiOutput" style="margin-top:12px"></div></div>
+        </div>
+      </aside>
+    </div>
+  </main>
+</div>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+/* Session & storage helpers */
+const sessionKey = 'sg_session';
+const session = JSON.parse(localStorage.getItem(sessionKey) || 'null');
+if (!session) {
+  alert('Please login first');
+  window.location.href = 'login.html';
+}
+
+const welcomeName = document.getElementById('welcomeName');
+const todayLabel = document.getElementById('todayLabel');
+const selectedDateLabel = document.getElementById('selectedDateLabel');
+
+const itemName = document.getElementById('itemName');
+const itemQty = document.getElementById('itemQty');
+const itemUnit = document.getElementById('itemUnit');
+const itemPrice = document.getElementById('itemPrice');
+const itemCategory = document.getElementById('itemCategory');
+const addBtn = document.getElementById('addBtn');
+
+const todayList = document.getElementById('todayList');
+const monthTotal = document.getElementById('monthTotal');
+const categoryBreakdown = document.getElementById('categoryBreakdown');
+const modePercent = document.getElementById('modePercent');
+const monthYearLabel = document.getElementById('monthYearLabel');
+const calGrid = document.getElementById('calGrid');
+const prevMonth = document.getElementById('prevMonth');
+const nextMonth = document.getElementById('nextMonth');
+
+const monthlyListArea = document.getElementById('monthlyListArea');
+const monthViewLabel = document.getElementById('monthViewLabel');
+
+const aiSuggest = document.getElementById('aiSuggest');
+const aiOutput = document.getElementById('aiOutput');
+
+welcomeName.innerText = session.email.split('@')[0];
+
+function toISO(d){ const y=d.getFullYear(); const m=('0'+(d.getMonth()+1)).slice(-2); const day=('0'+d.getDate()).slice(-2); return `${y}-${m}-${day}`; }
+function uid(){ return 'id_'+Math.random().toString(36).slice(2,9); }
+const MS_24H = 24*60*60*1000;
+
+function pingSession(){ const s = JSON.parse(localStorage.getItem(sessionKey)||'null'); if(!s){ location.href='login.html'; return; } if(Date.now()-s.lastActivity > MS_24H){ localStorage.removeItem(sessionKey); alert('Session expired (24h inactivity). Please login again.'); location.href='login.html'; return; } s.lastActivity = Date.now(); localStorage.setItem(sessionKey, JSON.stringify(s)); }
+
+function txKey(){ return 'sg_transactions_' + session.email; }
+function loadTransactions(){ return JSON.parse(localStorage.getItem(txKey()) || '[]'); }
+function saveTransactions(a){ localStorage.setItem(txKey(), JSON.stringify(a)); }
+
+let currentMonth = new Date();
+let selectedDateISO = toISO(new Date());
+
+/* ---------- Calendar & UI render ---------- */
+function renderCalendar(){
+  calGrid.innerHTML = '';
+  const y = currentMonth.getFullYear();
+  const m = currentMonth.getMonth();
+  monthYearLabel.innerText = currentMonth.toLocaleString('default',{month:'long', year:'numeric'});
+
+  const firstWeekday = new Date(y,m,1).getDay();
+  const daysInMonth = new Date(y,m+1,0).getDate();
+
+  for (let i=0;i<firstWeekday;i++){ const el = document.createElement('div'); el.className='cal-day empty'; calGrid.appendChild(el); }
+
+  for (let d=1; d<=daysInMonth; d++){
+    const dateISO = `${y}-${('0'+(m+1)).slice(-2)}-${('0'+d).slice(-2)}`;
+    const dayEl = document.createElement('div');
+    dayEl.className = 'cal-day' + (dateISO === selectedDateISO ? ' active' : '');
+    dayEl.innerHTML = `<div class="date-num">${d}</div>`;
+
+    const tx = loadTransactions().filter(t => t.dateISO === dateISO);
+    if (tx.length>0) {
+      const b = document.createElement('div'); b.className='badge'; b.innerText = tx.length + ' •'; dayEl.appendChild(b);
+    } else {
+      const spacer = document.createElement('div'); spacer.style.height='18px'; dayEl.appendChild(spacer);
+    }
+
+    dayEl.addEventListener('click', ()=> {
+      selectedDateISO = dateISO;
+      selectedDateLabel.innerText = (selectedDateISO === toISO(new Date())) ? 'Today' : new Date(selectedDateISO).toLocaleDateString();
+      todayLabel.innerText = new Date(selectedDateISO).toLocaleDateString();
+      renderAll(); pingSession();
+    });
+    calGrid.appendChild(dayEl);
+  }
+}
+
+function renderTodayList(){
+  const tx = loadTransactions().filter(t => t.dateISO === selectedDateISO);
+  todayList.innerHTML = '';
+  if (tx.length===0){ todayList.innerHTML = '<div class="muted-sm">No items for this date.</div>'; return; }
+  tx.forEach(t=>{
+    const r = document.createElement('div'); r.className='month-row';
+    r.innerHTML = `<div style="display:flex;flex-direction:column;"><div style="font-weight:600">${t.itemName} <span class="muted-sm" style="font-weight:400">(${t.qty} ${t.unit})</span></div><div class="muted-sm">${t.category} • ₹${t.price}</div></div><div style="display:flex;gap:8px"><button onclick="editItem('${t.id}')" style="background:#f1f5f9;border:none;padding:6px 8px;border-radius:8px;cursor:pointer">Edit</button><button onclick="deleteItem('${t.id}')" style="background:#fee2e2;border:none;padding:6px 8px;border-radius:8px;cursor:pointer">Delete</button></div>`;
+    todayList.appendChild(r);
+  });
+}
+
+/* add/update */
+addBtn.addEventListener('click', ()=>{
+  pingSession();
+  const name = itemName.value.trim(); const qty = Number(itemQty.value)||0; const unit = itemUnit.value; const price = Number(itemPrice.value)||0; const category = itemCategory.value;
+  if (!name || qty<=0 || price<=0){ alert('Enter valid name, qty and price'); return; }
+  const arr = loadTransactions(); const editId = addBtn.dataset.editId;
+  if (editId){ const idx = arr.findIndex(x=>x.id===editId); if (idx!==-1){ arr[idx] = { ...arr[idx], itemName:name, qty, unit, price, category }; } delete addBtn.dataset.editId; addBtn.innerText = 'Add Item';
+  } else { arr.push({ id:uid(), dateISO:selectedDateISO, itemName:name, qty, unit, price, category, mode:'Family' }); }
+  saveTransactions(arr); itemName.value=''; itemQty.value=''; itemPrice.value=''; renderAll();
+});
+
+/* edit/delete */
+function deleteItem(id){ if(!confirm('Delete this item?')) return; let arr = loadTransactions(); arr = arr.filter(x=>x.id!==id); saveTransactions(arr); renderAll(); pingSession(); }
+function editItem(id){ const arr = loadTransactions(); const t = arr.find(x=>x.id===id); if(!t) return; itemName.value = t.itemName; itemQty.value = t.qty; itemUnit.value = t.unit; itemPrice.value=t.price; itemCategory.value=t.category; addBtn.dataset.editId = id; addBtn.innerText = 'Update Item'; pingSession(); }
+
+/* month summary & breakdown */
+function renderMonthSummary(){
+  const mm = selectedDateISO.slice(0,7);
+  const tx = loadTransactions().filter(t => t.dateISO.startsWith(mm));
+  const total = tx.reduce((s,r)=>s + Number(r.price||0), 0);
+  monthTotal.innerText = '₹' + total.toFixed(2);
+  const byCat = {};
+  tx.forEach(t => { byCat[t.category] = (byCat[t.category]||0) + Number(t.price||0); });
+  if (Object.keys(byCat).length === 0) categoryBreakdown.innerText = 'No purchases yet';
+  else categoryBreakdown.innerText = Object.entries(byCat).map(([k,v]) => `${k}: ₹${v.toFixed(0)}`).join(' • ');
+  modePercent.innerText = '100%';
+}
+
+/* monthly aggregated list view */
+function renderMonthlyList(){
+  const mm = selectedDateISO.slice(0,7);
+  const tx = loadTransactions().filter(t => t.dateISO.startsWith(mm)).sort((a,b)=>a.dateISO.localeCompare(b.dateISO));
+  monthViewLabel.innerText = `Showing: ${currentMonth.toLocaleDateString(undefined,{month:'long', year:'numeric'})}`;
+  if (tx.length === 0){ monthlyListArea.innerHTML = `<div class="muted-sm">No purchases for ${currentMonth.toLocaleDateString(undefined,{month:'long', year:'numeric'})}.</div>`; return; }
+  const byDate = {}; tx.forEach(t => { (byDate[t.dateISO] = byDate[t.dateISO] || []).push(t); });
+  let html = '';
+  Object.keys(byDate).sort().forEach(date => {
+    const items = byDate[date];
+    const dateLabel = new Date(date).toLocaleDateString();
+    const dayTotal = items.reduce((s,i)=>s + Number(i.price||0), 0);
+    html += `<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><div style="font-weight:700">${dateLabel}</div><div class="muted-sm">₹${dayTotal.toFixed(0)}</div></div>`;
+    items.forEach(it => {
+      html += `<div style="display:flex;justify-content:space-between;padding:6px 8px;border-radius:8px;margin-bottom:6px;background:#fff"><div><div style="font-weight:600">${it.itemName} <span class="muted-sm" style="font-weight:400">(${it.qty} ${it.unit})</span></div><div class="muted-sm">${it.category}</div></div><div class="muted-sm">₹${it.price}</div></div>`;
+    });
+    html += `</div>`;
+  });
+  monthlyListArea.innerHTML = html;
+}
+
+/* AI demo */
+aiSuggest.addEventListener('click', ()=> {
+  pingSession();
+  const items = loadTransactions().filter(t => t.dateISO === selectedDateISO).map(x=>x.itemName + ' ('+x.qty+' '+x.unit+')');
+  aiOutput.innerHTML = '';
+  const box = document.createElement('div'); box.style.background = '#f8fafc'; box.style.padding='10px'; box.style.borderRadius='8px';
+  box.innerHTML = `<div style="font-weight:700;margin-bottom:6px">Recipe suggestion (demo)</div>`;
+  if (items.length===0) box.innerHTML += `<div class="muted-sm">Add items for this date to get suggestions.</div>`;
+  else {
+    box.innerHTML += `<div class="muted-sm">Using: ${items.slice(0,6).join(', ')}</div>`;
+    box.innerHTML += `<ul style="margin-top:8px"><li>Quick Vegetable Stir-fry — serves 3 (uses your vegetables)</li><li>Fruit Salad — quick dessert</li></ul>`;
+  }
+  aiOutput.appendChild(box);
+});
+
+/* navigation */
+document.getElementById('menu-logout').addEventListener('click', ()=> { if(confirm('Logout?')) { localStorage.removeItem(sessionKey); location.href='login.html'; }});
+document.getElementById('menu-graphs').addEventListener('click', ()=> { alert('Monthly Graphs are below — use charts to visualize.');});
+document.getElementById('menu-ai').addEventListener('click', ()=> { alert('Use the "Get Recipe Suggestion" button to test AI demo.');});
+
+/* month navigation */
+const prevMonthBtn = document.getElementById('prevMonth'), nextMonthBtn = document.getElementById('nextMonth');
+prevMonthBtn.addEventListener('click', ()=> { currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth()-1, 1); selectedDateISO = toISO(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1)); renderAll(); });
+nextMonthBtn.addEventListener('click', ()=> { currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth()+1, 1); selectedDateISO = toISO(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1)); renderAll(); });
+
+/* ---------- Charts (Chart.js) ---------- */
+let catChart = null, trendChart = null;
+
+function computeCategoryData(monthISO) {
+  const tx = loadTransactions().filter(t => t.dateISO.startsWith(monthISO));
+  const byCat = {};
+  tx.forEach(t => { byCat[t.category] = (byCat[t.category] || 0) + Number(t.price || 0); });
+  const labels = Object.keys(byCat);
+  const values = labels.map(l => byCat[l]);
+  return { labels, values };
+}
+
+function computeMonthlyTrend(count = 6) {
+  const now = new Date(selectedDateISO);
+  const months = [];
+  for (let i = count - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${('0'+(d.getMonth()+1)).slice(-2)}`;
+    months.push({ key, label: d.toLocaleString(undefined, { month: 'short', year: 'numeric' }) });
+  }
+  const totals = months.map(m => {
+    const tx = loadTransactions().filter(t => t.dateISO.startsWith(m.key));
+    return tx.reduce((s, r) => s + Number(r.price || 0), 0);
+  });
+  return { labels: months.map(m => m.label), values: totals };
+}
+
+function ensureChartsExist() {
+  const pieCtx = document.getElementById('catPie').getContext('2d');
+  const trendCtx = document.getElementById('trendLine').getContext('2d');
+  if (catChart) { catChart.destroy(); catChart = null; }
+  if (trendChart) { trendChart.destroy(); trendChart = null; }
+  catChart = new Chart(pieCtx, {
+    type: 'doughnut',
+    data: { labels: [], datasets: [{ data: [], backgroundColor: ['#2563eb','#7c3aed','#06b6d4','#f97316','#10b981','#ef4444'] }] },
+    options: { maintainAspectRatio: false, plugins:{legend:{position:'bottom'}} }
+  });
+  trendChart = new Chart(trendCtx, {
+    type: 'line',
+    data: { labels: [], datasets: [{ label:'Expense', data: [], fill:true, tension:0.3, borderWidth:2, pointRadius:3, backgroundColor:'rgba(37,99,235,0.08)', borderColor:'#2563eb' }] },
+    options: { maintainAspectRatio: false, plugins:{legend:{display:false}}, scales:{ y:{ beginAtZero:true } } }
+  });
+}
+
+function updateCharts() {
+  const monthISO = selectedDateISO.slice(0,7);
+  const cat = computeCategoryData(monthISO);
+  if (!catChart || !trendChart) ensureChartsExist();
+  catChart.data.labels = cat.labels.length ? cat.labels : ['No data'];
+  catChart.data.datasets[0].data = cat.values.length ? cat.values : [1];
+  catChart.update();
+  const trend = computeMonthlyTrend(6);
+  trendChart.data.labels = trend.labels;
+  trendChart.data.datasets[0].data = trend.values;
+  trendChart.update();
+}
+
+/* renderAll ties everything */
+function renderAll(){ selectedDateLabel.innerText = (selectedDateISO === toISO(new Date())) ? 'Today' : new Date(selectedDateISO).toLocaleDateString(); todayLabel.innerText = new Date(selectedDateISO).toLocaleDateString(); renderCalendar(); renderTodayList(); renderMonthSummary(); renderMonthlyList(); ensureChartsExist(); updateCharts(); }
+
+/* initial render */
+renderAll();
+
+/* keep session alive on interactions */
+['click','keydown','mousemove','touchstart'].forEach(e => { window.addEventListener(e, ()=> { const s = JSON.parse(localStorage.getItem(sessionKey)||'null'); if(s){ s.lastActivity = Date.now(); localStorage.setItem(sessionKey, JSON.stringify(s)); } }, {passive:true}); });
+
+/* ----------------- OPTIONAL: demo seed snippet (use only to test charts) -----------------
+Open browser Console (F12) and paste this, then reload dashboard:
+
+(function seedDemo(){
+  const sess = JSON.parse(localStorage.getItem('sg_session') || 'null');
+  const owner = sess ? sess.email : 'you@example.com';
+  const txKey = 'sg_transactions_' + owner;
+  const now = new Date();
+  const arr = JSON.parse(localStorage.getItem(txKey) || '[]');
+  function add(dateISO, name, qty, unit, price, category){ arr.push({ id:'seed_'+Math.random().toString(36).slice(2,9), dateISO, itemName:name, qty, unit, price, category, mode:'Family' }); }
+  for (let i=0;i<6;i++){
+    const d = new Date(now.getFullYear(), now.getMonth()-i, Math.max(1,Math.floor(Math.random()*22)+1));
+    const iso = `${d.getFullYear()}-${('0'+(d.getMonth()+1)).slice(-2)}-${('0'+d.getDate()).slice(-2)}`;
+    add(iso, 'Rice', 2, 'kg', 1200, 'Grain');
+    add(iso, 'Tomato', 2, 'kg', 80, 'Vegetable');
+    add(iso, 'Biscuits', 1, 'pkt', 120, 'Snack');
+    if (Math.random() > 0.5) add(iso, 'Apple', 6, 'pcs', 240, 'Fruit');
+  }
+  localStorage.setItem(txKey, JSON.stringify(arr));
+  alert('Seeded demo transactions for ' + owner + '. Now reload dashboard.');
+})();
+
+------------------------------------------------------------------------------------------- */
+
+</script>
+
+</body>
+</html>
