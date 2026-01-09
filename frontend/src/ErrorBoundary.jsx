@@ -11,9 +11,7 @@ export default class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, info) {
-    // Save stack/info for display and debugging
     this.setState({ info });
-    // Also log to console so Vite terminal / browser console has the details
     console.error("ErrorBoundary caught:", error, info);
   }
 

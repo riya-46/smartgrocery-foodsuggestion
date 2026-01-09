@@ -1,6 +1,7 @@
 import { useState } from "react";
+import api from "../lib/api";
 
-/* ================= COMMON DISEASES ================= */
+/*  COMMON DISEASES  */
 const COMMON_DISEASES = [
   "Diabetes",
   "High BP",
@@ -9,7 +10,7 @@ const COMMON_DISEASES = [
   "Thyroid",
 ];
 
-/* ================= DISEASE → FOOD LOGIC ================= */
+/*  DISEASE → FOOD LOGIC  */
 const DISEASE_FOOD_MAP = {
   Diabetes: {
     recommended: ["Oats", "Green Vegetables", "Dal", "Apple", "Curd"],
@@ -84,7 +85,7 @@ export default function FoodForHealth() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [savedRecipes, setSavedRecipes] = useState([]);
 
-  /* ================= TOGGLE DISEASE ================= */
+  /*  TOGGLE DISEASE  */
   const toggleDisease = (disease) => {
     setMember((prev) => ({
       ...prev,
@@ -94,37 +95,43 @@ export default function FoodForHealth() {
     }));
   };
 
-  /* ================= GET SUGGESTIONS ================= */
+  /*  GET SUGGESTIONS  */
   const getSuggestions = () => {
     /*
       🔮 FUTURE AI INTEGRATION POINT
       --------------------------------
-      yaha par tum:
+      yaha par hum:
       - Gemini API
       - OpenAI
       - ya apna ML model
-      call karogi with:
+      call karenge with:
       { age, gender, diseases }
     */
     setShowSuggestions(true);
   };
 
-  /* ================= DASHBOARD ADD ================= */
-  const addItemToDashboard = (item) => {
-    alert(`"${item}" will be added to Dashboard`);
-    /*
-      🔌 FUTURE API:
-      POST /tx/add
-      {
+  /*  REAL DASHBOARD ADD  */
+  const addItemToDashboard = async (item) => {
+    try {
+      const user = JSON.parse(localStorage.getItem("sg_user"));
+
+      await api.post("/tx/add", {
+        userEmail: user.email,
         itemName: item,
         quantity: 1,
-        unit: "kg",
-        price: 0
-      }
-    */
+        //unit: "plate",
+        price: 0,
+        date: new Date().toISOString().slice(0, 10),
+        mode: "Family",
+      });
+
+      alert(`"${item}" added to Dashboard`);
+    } catch (err) {
+      alert("Failed to add item");
+    }
   };
 
-  /* ================= SAVE RECIPE ================= */
+  /*  SAVE RECIPE  */
   const saveRecipe = (recipe) => {
     setSavedRecipes((prev) => [
       ...prev,
@@ -132,7 +139,7 @@ export default function FoodForHealth() {
     ]);
   };
 
-  /* ================= MERGED FOOD DATA ================= */
+  /*  MERGED FOOD DATA  */
   const selectedDiseases = member.diseases;
   const recommendedFoods = [];
   const avoidFoods = [];
@@ -154,7 +161,7 @@ export default function FoodForHealth() {
         Health-based food & recipe suggestions
       </p>
 
-      {/* ================= MEMBER INPUT BLOCK ================= */}
+      {/*  MEMBER INPUT BLOCK  */}
 <div className="card" style={{ padding: 20, marginTop: 20 }}>
   <h3>Family Member Details</h3>
 
@@ -200,7 +207,7 @@ export default function FoodForHealth() {
     </select>
   </div>
 
-  {/* DISEASES — ONE LINE WITH CHECKBOX BESIDE NAME */}
+  {/* DISEASES  */}
 <h4 style={{ marginBottom: 8 }}>Diseases</h4>
 
 <div
@@ -232,7 +239,7 @@ export default function FoodForHealth() {
     </label>
   ))}
 
-   {/* GET AI BUTTON — CENTER */}
+   {/* AI BUTTON */}
   
     <button
       onClick={getSuggestions}
@@ -256,7 +263,7 @@ export default function FoodForHealth() {
 </div>
 
 
-      {/* ================= SUGGESTIONS ================= */}
+      {/*  SUGGESTIONS  */}
       {showSuggestions && (
         <>
           <div className="card" style={{ padding: 20, marginTop: 24 }}>

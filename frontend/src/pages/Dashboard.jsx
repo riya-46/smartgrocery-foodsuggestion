@@ -398,10 +398,10 @@ export default function Dashboard() {
 
         </div> {/* split-grid CLOSED */}
 
-        {/* ================= CHARTS ================= */}
+        {/*  CHARTS  */}
 <div className="charts-grid">
 
-  {/* ===== PIE CHART ===== */}
+  {/*  PIE CHART  */}
   <div className="card chart-box">
     <h3 style={{ textAlign: "center" }}>Mode-wise Expense</h3>
 
@@ -433,7 +433,7 @@ export default function Dashboard() {
     </div>
   </div>
 
-  {/* ===== LINE CHART ===== */}
+  {/*  LINE CHART  */}
   <div className="card chart-box">
     <h3 style={{ textAlign: "center" }}>Expense Trend</h3>
 
@@ -488,8 +488,8 @@ export default function Dashboard() {
                       marginRight: 12,
                       padding: "6px 14px",
                       borderRadius: 20,
-                      border: "1px solid #4CAF50",
-                      background: "#E8F5E9",
+                      border: "1px solid #09c6f0ff",
+                      background: "#09c6f0ff",
                       cursor: "pointer"
                    }}
                   >

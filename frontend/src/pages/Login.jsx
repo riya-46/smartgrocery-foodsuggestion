@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+//import { useNavigate, Link } from "react-router-dom";
 import api from "../lib/api";
 
 export default function Login() {
@@ -22,10 +22,10 @@ export default function Login() {
       });
 
       if (res.data.success) {
-        // 🔑 SAVE JWT TOKEN
+        
         localStorage.setItem("sg_token", res.data.token);
 
-        // (Optional) save user info
+        //save user info
         localStorage.setItem(
           "sg_user",
           JSON.stringify(res.data.user)
@@ -79,9 +79,6 @@ export default function Login() {
           </button>
         </form>
 
-        <p style={{ marginTop: 12 }}>
-          New user? <Link to="/register">Register here</Link>
-        </p>
       </div>
     </div>
   );
