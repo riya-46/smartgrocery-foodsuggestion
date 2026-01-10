@@ -1,45 +1,28 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import api from "../lib/api";
+import { useNavigate } from "react-router-dom";
 
 export default function Login() {
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const login = async (e) => {
+  const login = (e) => {
     e.preventDefault();
-    setError("");
     setLoading(true);
 
-    try {
-      const res = await api.post("/auth/login", {
-        email,
-        password,
-      });
+    // 🔥 FAKE LOGIN (NO BACKEND)
+    localStorage.setItem("sg_token", "dummy-token");
+    localStorage.setItem(
+      "sg_user",
+      JSON.stringify({ email })
+    );
 
-      if (res.data.success) {
-        // 🔑 SAVE JWT TOKEN
-        localStorage.setItem("sg_token", res.data.token);
-
-        // (Optional) save user info
-        localStorage.setItem(
-          "sg_user",
-          JSON.stringify(res.data.user)
-        );
-
-        navigate("/dashboard");
-      } else {
-        setError(res.data.message || "Login failed");
-      }
-    } catch (err) {
-      setError("Server error. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+    // simulate delay (optional)
+    setTimeout(() => {
+      navigate("/dashboard");
+    }, 500);
   };
 
   return (
@@ -55,8 +38,7 @@ export default function Login() {
             onChange={(e) => setEmail(e.target.value)}
             required
           />
-          <br />
-          <br />
+          <br /><br />
 
           <input
             type="password"
@@ -65,23 +47,12 @@ export default function Login() {
             onChange={(e) => setPassword(e.target.value)}
             required
           />
-          <br />
-          <br />
-
-          {error && (
-            <p style={{ color: "red", marginBottom: 10 }}>
-              {error}
-            </p>
-          )}
+          <br /><br />
 
           <button className="primary" type="submit" disabled={loading}>
             {loading ? "Logging in..." : "Login"}
           </button>
         </form>
-
-        <p style={{ marginTop: 12 }}>
-          New user? <Link to="/register">Register here</Link>
-        </p>
       </div>
     </div>
   );

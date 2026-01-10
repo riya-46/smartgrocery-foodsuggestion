@@ -2,12 +2,13 @@ import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
-import Otp from "../models/Otp.js";
-import { sendOtpEmail } from "../utils/sendEmail.js";
+//import Otp from "../models/Otp.js";
+//import { sendOtpEmail } from "../utils/sendEmail.js";
 
 const router = express.Router();
 
-/* ================= SEND OTP ================= */
+
+/* ================= SEND OTP ================= 
 router.post("/send-otp", async (req, res) => {
   try {
     const { email } = req.body;
@@ -38,9 +39,9 @@ router.post("/send-otp", async (req, res) => {
     console.error(err);
     res.status(500).json({ success: false, message: "OTP failed" });
   }
-});
+});*/
 
-/* ========== VERIFY OTP & REGISTER ========== */
+/* ========== VERIFY OTP & REGISTER ========== 
 router.post("/verify-otp", async (req, res) => {
   const { name, email, password, otp } = req.body;
 
@@ -66,35 +67,39 @@ router.post("/verify-otp", async (req, res) => {
 
   res.json({ success: true, message: "Registration successful" });
 });
+*/
 
 /* ================= LOGIN (JWT) ================= */
 router.post("/login", async (req, res) => {
-  const { email, password } = req.body;
+  try {
+    const { email } = req.body;
 
-  const user = await User.findOne({ email });
-  if (!user) {
-    return res.json({ success: false, message: "Email not registered" });
+    if (!email) {
+      return res.json({ success: false, message: "Email required" });
+    }
+
+    let user = await User.findOne({ email });
+
+    // 🔥 AUTO CREATE USER IF NOT EXISTS
+    if (!user) {
+      user = await User.create({
+        email,
+        name: email.split("@")[0],
+      });
+    }
+
+    res.json({
+      success: true,
+      user: {
+        name: user.name,
+        email: user.email,
+      },
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Server error" });
   }
-
-  const match = await bcrypt.compare(password, user.password);
-  if (!match) {
-    return res.json({ success: false, message: "Incorrect password" });
-  }
-
-  const token = jwt.sign(
-    { id: user._id },
-    process.env.JWT_SECRET,
-    { expiresIn: "7d" }
-  );
-
-  res.json({
-    success: true,
-    token,
-    user: {
-      name: user.name,
-      email: user.email,
-    },
-  });
 });
+
 
 export default router;

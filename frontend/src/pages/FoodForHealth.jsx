@@ -1,4 +1,5 @@
 import { useState } from "react";
+import api from "../lib/api";
 
 /* ================= COMMON DISEASES ================= */
 const COMMON_DISEASES = [
@@ -78,10 +79,10 @@ export default function FoodForHealth() {
     age: "",
     gender: "",
     diseases: [],
-    customDisease: "",
   });
 
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showRecipes, setShowRecipes] = useState(false);
   const [savedRecipes, setSavedRecipes] = useState([]);
 
   /* ================= TOGGLE DISEASE ================= */
@@ -96,49 +97,54 @@ export default function FoodForHealth() {
 
   /* ================= GET SUGGESTIONS ================= */
   const getSuggestions = () => {
-    /*
-      🔮 FUTURE AI INTEGRATION POINT
-      --------------------------------
-      yaha par tum:
-      - Gemini API
-      - OpenAI
-      - ya apna ML model
-      call karogi with:
-      { age, gender, diseases }
-    */
     setShowSuggestions(true);
+    setShowRecipes(false);
   };
 
-  /* ================= DASHBOARD ADD ================= */
-  const addItemToDashboard = (item) => {
-    alert(`"${item}" will be added to Dashboard`);
-    /*
-      🔌 FUTURE API:
-      POST /tx/add
-      {
+  /* ================= REAL DASHBOARD ADD ================= */
+  const addItemToDashboard = async (item) => {
+    try {
+      const user = JSON.parse(localStorage.getItem("sg_user"));
+
+      await api.post("/tx/add", {
+        userEmail: user.email,
         itemName: item,
         quantity: 1,
-        unit: "kg",
-        price: 0
-      }
-    */
+        unit: "plate",
+        price: 0,
+        date: new Date().toISOString().slice(0, 10),
+        mode: "Family",
+      });
+
+      alert(`"${item}" added to Dashboard`);
+    } catch (err) {
+      alert("Failed to add item");
+    }
   };
 
   /* ================= SAVE RECIPE ================= */
   const saveRecipe = (recipe) => {
     setSavedRecipes((prev) => [
       ...prev,
-      `${member.name}: ${recipe}`,
+      {
+        id: Date.now(),
+        memberName: member.name,
+        recipe,
+      },
     ]);
   };
 
+  /* ================= DELETE RECIPE ================= */
+  const deleteRecipe = (id) => {
+    setSavedRecipes((prev) => prev.filter((r) => r.id !== id));
+  };
+
   /* ================= MERGED FOOD DATA ================= */
-  const selectedDiseases = member.diseases;
   const recommendedFoods = [];
   const avoidFoods = [];
   const recipes = [];
 
-  selectedDiseases.forEach((d) => {
+  member.diseases.forEach((d) => {
     const data = DISEASE_FOOD_MAP[d];
     if (data) {
       recommendedFoods.push(...data.recommended);
@@ -150,127 +156,72 @@ export default function FoodForHealth() {
   return (
     <div style={{ padding: 24 }}>
       <h2>🥗 Food for Health</h2>
-      <p style={{ color: "#555" }}>
-        Health-based food & recipe suggestions
-      </p>
 
-      {/* ================= MEMBER INPUT BLOCK ================= */}
-<div className="card" style={{ padding: 20, marginTop: 20 }}>
-  <h3>Family Member Details</h3>
+      <div className="card" style={{ padding: 20, marginTop: 20 }}>
+        <h3>Family Member Details</h3>
 
-  {/* NAME / AGE / GENDER — ONE LINE */}
-  <div
-    style={{
-      display: "grid",
-      gridTemplateColumns: "2fr 1fr 1fr",
-      gap: 12,
-      marginBottom: 16,
-    }}
-  >
-    <input
-      placeholder="Name"
-      value={member.name}
-      onChange={(e) =>
-        setMember({ ...member, name: e.target.value })
-      }
-      style={{ padding: 8 }}
-    />
+        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: 12 }}>
+          <input placeholder="Name" onChange={(e) => setMember({ ...member, name: e.target.value })} />
+          <input type="number" placeholder="Age" onChange={(e) => setMember({ ...member, age: e.target.value })} />
+          <select onChange={(e) => setMember({ ...member, gender: e.target.value })}>
+            <option value="">Gender</option>
+            <option>Male</option>
+            <option>Female</option>
+          </select>
+        </div>
 
-    <input
-      type="number"
-      placeholder="Age"
-      value={member.age}
-      onChange={(e) =>
-        setMember({ ...member, age: e.target.value })
-      }
-      style={{ padding: 8 }}
-    />
-
-    <select
-      value={member.gender}
-      onChange={(e) =>
-        setMember({ ...member, gender: e.target.value })
-      }
-      style={{ padding: 8 }}
-    >
-      <option value="">Gender</option>
-      <option>Male</option>
-      <option>Female</option>
-      <option>Other</option>
-    </select>
-  </div>
-
-  {/* DISEASES — ONE LINE WITH CHECKBOX BESIDE NAME */}
-<h4 style={{ marginBottom: 8 }}>Diseases</h4>
-
-<div
-  style={{
-    display: "flex",
-    gap: 100,
-    alignItems: "center",
-    flexWrap: "wrap",
-    marginBottom: 20,
-  }}
+        <div style={{ marginTop: 16, display: "flex", gap: 150, flexWrap: "wrap" }}>
+          {COMMON_DISEASES.map((d) => (
+            <label
+                      key={d}
+                      style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      cursor: "pointer",
+                  }}
 >
-  {COMMON_DISEASES.map((d) => (
-    <label
-      key={d}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 6,
-        fontSize: 14,
-        cursor: "pointer",
-      }}
-    >
-      <input
-        type="checkbox"
-        checked={member.diseases.includes(d)}
-        onChange={() => toggleDisease(d)}
-      />
-      {d}
-    </label>
-  ))}
+                  <input
+                  type="checkbox"
+                  onChange={() => toggleDisease(d)}
+                     />
+                 <span>{d}</span>
+            </label>
 
-   {/* GET AI BUTTON — CENTER */}
-  
-    <button
-      onClick={getSuggestions}
-      style={{
-        padding: "10px 22px",
-        background: "#22c55e",
-        color: "#fff",
-        border: "none",
-        borderRadius: 20,
-        fontSize: 15,
-        cursor: "pointer",
-      }}
-    >
-      🤖 Get AI Suggestions
-    </button>
-  
+          ))}
+          <button onClick={getSuggestions}  
+          style={{ 
+            backgroundColor: "#ffffff", 
+            color: "#24d241", 
+            border: "4px solid #58e9a5", 
+            padding: "8px 14px", 
+            borderRadius: 6, 
+            fontWeight: 800, 
+            fontSize:20,
+            cursor: "pointer", }}>
+              🤖 Get AI Suggestions</button>
+        </div>
+      </div>
 
-</div>
-
-  
-</div>
-
-
-      {/* ================= SUGGESTIONS ================= */}
       {showSuggestions && (
         <>
+          {/* ✅ Recommended Foods */}
           <div className="card" style={{ padding: 20, marginTop: 24 }}>
             <h3>✅ Recommended Foods</h3>
             {[...new Set(recommendedFoods)].map((item) => (
-              <div key={item} style={{ display: "flex", justifyContent: "space-between" }}>
+              <div key={item} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, }}>
                 <span>{item}</span>
-                <button onClick={() => addItemToDashboard(item)}>
-                  Add to Dashboard
-                </button>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={() => addItemToDashboard(item)}>Add</button>
+                  <button onClick={() => setShowRecipes(true)}>Recipe</button>
+                </div>
               </div>
             ))}
+          </div>
 
-            <h3 style={{ marginTop: 16 }}>❌ Avoid Foods</h3>
+          {/* ❌ Avoid Foods */}
+          <div className="card" style={{ padding: 20, marginTop: 24 }}>
+            <h3>❌ Avoid Foods</h3>
             <ul>
               {[...new Set(avoidFoods)].map((f) => (
                 <li key={f}>{f}</li>
@@ -278,24 +229,52 @@ export default function FoodForHealth() {
             </ul>
           </div>
 
-          <div className="card" style={{ padding: 20, marginTop: 24 }}>
-            <h3>🍲 Recipes for {member.name}</h3>
-            {[...new Set(recipes)].map((r) => (
-              <div key={r} style={{ display: "flex", justifyContent: "space-between" }}>
-                <span>{r}</span>
-                <button onClick={() => saveRecipe(r)}>Save</button>
-              </div>
-            ))}
-          </div>
+          {/* 🍲 Recipes */}
+          {showRecipes && (
+            <div className="card" style={{ padding: 20, marginTop: 24 }}>
+              <h3>🍲 Recipes for {member.name}</h3>
+              {[...new Set(recipes)].map((r) => (
+                <div key={r} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12,  }}>
+                  <span>{r}</span>
+                  <button onClick={() => saveRecipe(r)}>Save</button>
+                </div>
+              ))}
+            </div>
+          )}
 
+          {/* 📌 Saved Recipes */}
           <div className="card" style={{ padding: 20, marginTop: 24 }}>
             <h3>📌 Saved Recipes</h3>
+
             {savedRecipes.length === 0 ? (
               <p>No recipes saved</p>
             ) : (
-              <ul>
-                {savedRecipes.map((r, i) => (
-                  <li key={i}>{r}</li>
+              <ul style={{ listStyle: "none", paddingLeft: 0 }}>
+                {savedRecipes.map((r) => (
+                  <li
+                    key={r.id}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      marginBottom: 8,
+                    }}
+                  >
+                    <span>
+                      <strong>{r.memberName}:</strong> {r.recipe}
+                    </span>
+
+                    <button
+                      onClick={() => deleteRecipe(r.id)}
+                      style={{
+                        background: "transparent",
+                        border: "none",
+                        color: "red",
+                        cursor: "pointer",
+                      }}
+                    >
+                      ❌
+                    </button>
+                  </li>
                 ))}
               </ul>
             )}
