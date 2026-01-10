@@ -1,28 +1,37 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import api from "../lib/api";
 
 export default function Login() {
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [password, setPassword] = useState(""); // backend me use nahi ho raha, but ok
   const [loading, setLoading] = useState(false);
 
-  const login = (e) => {
+  const login = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    // 🔥 FAKE LOGIN (NO BACKEND)
-    localStorage.setItem("sg_token", "dummy-token");
-    localStorage.setItem(
-      "sg_user",
-      JSON.stringify({ email })
-    );
+    try {
+      const res = await api.post("/api/auth/login", {
+        email,
+      });
 
-    // simulate delay (optional)
-    setTimeout(() => {
-      navigate("/dashboard");
-    }, 500);
+      if (res.data.success) {
+        localStorage.setItem("sg_user", JSON.stringify(res.data.user));
+        localStorage.setItem("sg_token", "dummy-token"); // optional (future JWT)
+
+        navigate("/dashboard");
+      } else {
+        alert(res.data.message || "Login failed");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Login error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
